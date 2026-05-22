@@ -3,7 +3,8 @@ const PRECACHE_ASSETS = [
   './',
   './index.html',
   './favicon.svg',
-  './icons.svg'
+  './icon-192x192.png',
+  './icon-512x512.png'
 ];
 
 // Install Event - Pre-cache critical app shell resources
