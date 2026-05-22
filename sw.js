@@ -1,9 +1,9 @@
 const CACHE_NAME = 'viva-plus-cache-v1';
 const PRECACHE_ASSETS = [
-  '/',
-  '/index.html',
-  '/favicon.svg',
-  '/icons.svg'
+  './',
+  './index.html',
+  './favicon.svg',
+  './icons.svg'
 ];
 
 // Install Event - Pre-cache critical app shell resources
@@ -70,7 +70,7 @@ self.addEventListener('fetch', (event) => {
       }).catch(() => {
         // Fallback for HTML request offline
         if (event.request.headers.get('accept') && event.request.headers.get('accept').includes('text/html')) {
-          return caches.match('/');
+          return caches.match('./');
         }
       });
     })
