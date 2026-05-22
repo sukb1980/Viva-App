@@ -322,13 +322,6 @@ export default function App() {
       {/* Top Header */}
       <header className="app-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <button 
-            className="hamburger-btn" 
-            onClick={() => setShowMoreMenu(true)}
-            aria-label="Open Menu"
-          >
-            <Menu size={20} />
-          </button>
           <div className="brand-title">
             VIVA <span className="brand-plus">Plus+</span>
           </div>
@@ -1347,7 +1340,7 @@ export default function App() {
           onClick={() => { setCurrentTab('leaflet'); setShowMoreMenu(false); }}
         >
           <Tag size={20} />
-          <span>Leaflet</span>
+          <span>Promotions</span>
           <span className="nav-indicator"></span>
         </button>
 
