@@ -24,7 +24,9 @@ import {
   CheckCircle,
   Search,
   ShoppingCart,
-  Menu
+  Menu,
+  Download,
+  Smartphone
 } from 'lucide-react';
 
 const CAROUSEL_SLIDES = [
@@ -59,6 +61,15 @@ export default function App() {
   const [listCount, setListCount] = useState(0);
   const [toastMessage, setToastMessage] = useState('');
   const [activeSlide, setActiveSlide] = useState(0);
+  
+  // PWA installation states
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  const [isInstallable, setIsInstallable] = useState(false);
+  const [isAlreadyInstalled, setIsAlreadyInstalled] = useState(false);
+  const [isInstallBannerDismissed, setIsInstallBannerDismissed] = useState(false);
+  const [showInstallModal, setShowInstallModal] = useState(false);
+  const [installPlatform, setInstallPlatform] = useState('android');
+  const [isIOS, setIsIOS] = useState(false);
   
   // Auto-rotate carousel slides
   useEffect(() => {
@@ -250,6 +261,64 @@ export default function App() {
     }, 2500);
   };
 
+  // PWA lifecycle listeners
+  useEffect(() => {
+    // Check if running in standalone mode (already installed)
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches 
+      || window.navigator.standalone 
+      || document.referrer.includes('android-app://');
+    setIsAlreadyInstalled(!!isStandalone);
+
+    // Detect iOS
+    const userAgent = window.navigator.userAgent.toLowerCase();
+    const isIosDevice = /iphone|ipad|ipod/.test(userAgent);
+    setIsIOS(isIosDevice);
+
+    const handleBeforeInstallPrompt = (e) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setIsInstallable(true);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+
+    const handleAppInstalled = () => {
+      setIsInstallable(false);
+      setDeferredPrompt(null);
+      setIsAlreadyInstalled(true);
+      triggerToast('Thank you for installing VIVA Plus+! 🎉');
+    };
+
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
+  }, []);
+
+  const handleInstallClick = () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.then((choiceResult) => {
+        if (choiceResult.outcome === 'accepted') {
+          console.log('User accepted the install prompt');
+        } else {
+          console.log('User dismissed the install prompt');
+        }
+        setDeferredPrompt(null);
+        setIsInstallable(false);
+      });
+    } else {
+      if (isIOS) {
+        setInstallPlatform('ios');
+      } else {
+        setInstallPlatform('other');
+      }
+      setShowInstallModal(true);
+    }
+  };
+
   const addToList = (itemName) => {
     setListCount(prev => prev + 1);
     triggerToast(`Added ${itemName} to shopping list!`);
@@ -434,6 +503,42 @@ export default function App() {
                 ))}
               </div>
             </div>
+
+            {/* PWA Smart Install Banner */}
+            {(!isAlreadyInstalled && !isInstallBannerDismissed && (isInstallable || isIOS)) && (
+              <div className="pwa-install-banner animate-slide-in">
+                <div className="pwa-install-body">
+                  <img 
+                    src={import.meta.env.BASE_URL + "icon-192x192.png"} 
+                    alt="VIVA Icon" 
+                    className="pwa-install-logo"
+                    onError={(e) => {
+                      e.target.src = 'favicon.svg';
+                    }}
+                  />
+                  <div className="pwa-install-text-content">
+                    <div className="pwa-install-title">Install VIVA Plus+ App</div>
+                    <div className="pwa-install-subtitle">Offline shopping list, spin daily & local rewards!</div>
+                  </div>
+                </div>
+                <div className="pwa-install-actions">
+                  <button 
+                    className="pwa-banner-action-dismiss" 
+                    onClick={() => setIsInstallBannerDismissed(true)}
+                    aria-label="Dismiss banner"
+                  >
+                    <X size={14} />
+                  </button>
+                  <button 
+                    className="pwa-banner-action-btn" 
+                    onClick={handleInstallClick}
+                  >
+                    <Download size={12} />
+                    <span>Install</span>
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Quick Action Grid */}
             <div className="quick-grid">
@@ -1474,7 +1579,84 @@ export default function App() {
                 <span className="more-link-icon">💬</span>
                 <span className="more-link-label">Customer Support</span>
               </button>
+
+              {!isAlreadyInstalled && (
+                <button 
+                  className="more-grid-link pwa-more-install-btn"
+                  onClick={() => { setShowMoreMenu(false); handleInstallClick(); }}
+                >
+                  <span className="more-link-icon">📲</span>
+                  <span className="more-link-label" style={{ fontWeight: '600', color: 'var(--primary)' }}>Install App</span>
+                </button>
+              )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* PWA Manual Install Guidance Modal */}
+      {showInstallModal && (
+        <div className="pwa-guidance-backdrop" onClick={() => setShowInstallModal(false)}>
+          <div className="pwa-guidance-content" onClick={(e) => e.stopPropagation()}>
+            <div className="pwa-guidance-header">
+              <div className="pwa-guidance-logo-wrapper">
+                <img 
+                  src={import.meta.env.BASE_URL + "icon-192x192.png"} 
+                  alt="VIVA Icon" 
+                  className="pwa-guidance-logo"
+                  onError={(e) => {
+                    e.target.src = 'favicon.svg';
+                  }}
+                />
+              </div>
+              <h3 className="pwa-guidance-title">Get the VIVA Plus+ App</h3>
+              <p className="pwa-guidance-tagline">Access Middle East's best discount grocery features directly from your home screen.</p>
+              <button className="pwa-guidance-close" onClick={() => setShowInstallModal(false)} aria-label="Close modal">
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="pwa-guidance-body">
+              {installPlatform === 'ios' ? (
+                <div className="pwa-steps">
+                  <div className="pwa-step">
+                    <span className="pwa-step-num">1</span>
+                    <p className="pwa-step-desc">Open this website in your iOS <strong>Safari</strong> browser.</p>
+                  </div>
+                  <div className="pwa-step">
+                    <span className="pwa-step-num">2</span>
+                    <p className="pwa-step-desc">Tap the <strong>Share</strong> button <span className="pwa-highlight-icon">📤</span> at the bottom (or top) toolbar.</p>
+                  </div>
+                  <div className="pwa-step">
+                    <span className="pwa-step-num">3</span>
+                    <p className="pwa-step-desc">Scroll down the share menu and select <strong>Add to Home Screen</strong> <span className="pwa-highlight-icon">➕</span>.</p>
+                  </div>
+                  <div className="pwa-step">
+                    <span className="pwa-step-num">4</span>
+                    <p className="pwa-step-desc">Tap <strong>Add</strong> in the top right to complete installation!</p>
+                  </div>
+                </div>
+              ) : (
+                <div className="pwa-steps">
+                  <div className="pwa-step">
+                    <span className="pwa-step-num">1</span>
+                    <p className="pwa-step-desc">Tap the <strong>three dots menu</strong> <span className="pwa-highlight-icon">⋮</span> in the top-right corner of Chrome.</p>
+                  </div>
+                  <div className="pwa-step">
+                    <span className="pwa-step-num">2</span>
+                    <p className="pwa-step-desc">Select <strong>Install app</strong> or <strong>Add to Home screen</strong>.</p>
+                  </div>
+                  <div className="pwa-step">
+                    <span className="pwa-step-num">3</span>
+                    <p className="pwa-step-desc">Follow the screen prompts to add VIVA Plus+ to your device.</p>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <button className="pwa-guidance-ok-btn" onClick={() => setShowInstallModal(false)}>
+              Got It
+            </button>
           </div>
         </div>
       )}
