@@ -23,13 +23,50 @@ import {
   User,
   CheckCircle,
   Search,
-  ShoppingCart
+  ShoppingCart,
+  Menu
 } from 'lucide-react';
+
+const CAROUSEL_SLIDES = [
+  {
+    id: 0,
+    tag: 'Featured Offer',
+    title: '🔥 WEEKLY MEGA DEALS: Up to 40% off on fresh imported goods!',
+    btnText: 'Shop Leaflet',
+    tab: 'leaflet',
+    gradient: 'linear-gradient(135deg, var(--primary) 0%, #ff4b52 100%)'
+  },
+  {
+    id: 1,
+    tag: 'Gamification',
+    title: '🎡 SPIN & WIN DAILY: Earn extra points and shopping vouchers!',
+    btnText: 'Spin Now',
+    tab: 'rewards',
+    gradient: 'linear-gradient(135deg, #7B3FA0 0%, #E040FB 100%)'
+  },
+  {
+    id: 2,
+    tag: 'Store Finder',
+    title: '📍 FIND NEAREST STORE: Timings, map directions & contact numbers!',
+    btnText: 'Find Stores',
+    tab: 'stores',
+    gradient: 'linear-gradient(135deg, #1565C0 0%, #00d2ff 100%)'
+  }
+];
 
 export default function App() {
   const [currentTab, setCurrentTab] = useState('home');
   const [listCount, setListCount] = useState(0);
   const [toastMessage, setToastMessage] = useState('');
+  const [activeSlide, setActiveSlide] = useState(0);
+  
+  // Auto-rotate carousel slides
+  useEffect(() => {
+    const slideTimer = setInterval(() => {
+      setActiveSlide(prev => (prev + 1) % CAROUSEL_SLIDES.length);
+    }, 4500);
+    return () => clearInterval(slideTimer);
+  }, []);
   
   // Mobile drawer states
   const [showMoreMenu, setShowMoreMenu] = useState(false);
@@ -284,8 +321,17 @@ export default function App() {
 
       {/* Top Header */}
       <header className="app-header">
-        <div className="brand-title">
-          VIVA <span className="brand-plus">Plus+</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <button 
+            className="hamburger-btn" 
+            onClick={() => setShowMoreMenu(true)}
+            aria-label="Open Menu"
+          >
+            <Menu size={20} />
+          </button>
+          <div className="brand-title">
+            VIVA <span className="brand-plus">Plus+</span>
+          </div>
         </div>
         
         {/* Desktop Navigation Links */}
@@ -360,21 +406,39 @@ export default function App() {
           <div>
             {/* Promo Carousel */}
             <div className="hero-carousel">
-              <div className="carousel-slide" onClick={() => setCurrentTab('leaflet')}>
-                <span className="carousel-tag">Featured Offer</span>
-                <h2 className="carousel-title">🔥 WEEKLY MEGA DEALS: Up to 40% off on fresh imported goods!</h2>
+              <div 
+                className="carousel-slide" 
+                onClick={() => {
+                  setCurrentTab(CAROUSEL_SLIDES[activeSlide].tab);
+                  setShowMoreMenu(false);
+                }}
+                style={{ 
+                  background: CAROUSEL_SLIDES[activeSlide].gradient,
+                  transition: 'background 0.5s ease-in-out'
+                }}
+              >
+                <span className="carousel-tag">{CAROUSEL_SLIDES[activeSlide].tag}</span>
+                <h2 className="carousel-title">{CAROUSEL_SLIDES[activeSlide].title}</h2>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <button className="carousel-btn">
-                    <span>Shop Leaflet</span>
+                    <span>{CAROUSEL_SLIDES[activeSlide].btnText}</span>
                     <ArrowRight size={14} />
                   </button>
-                  <span style={{ fontSize: '0.65rem', opacity: 0.9 }}>1 of 3</span>
+                  <span style={{ fontSize: '0.65rem', opacity: 0.9 }}>{activeSlide + 1} of 3</span>
                 </div>
               </div>
               <div className="carousel-dots">
-                <span className="dot active"></span>
-                <span className="dot"></span>
-                <span className="dot"></span>
+                {CAROUSEL_SLIDES.map((_, idx) => (
+                  <span 
+                    key={idx} 
+                    className={`dot ${activeSlide === idx ? 'active' : ''}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActiveSlide(idx);
+                    }}
+                    style={{ cursor: 'pointer' }}
+                  ></span>
+                ))}
               </div>
             </div>
 

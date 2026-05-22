@@ -127,6 +127,25 @@ h1, h2, h3, h4, h5, h6,
   margin-left: 2px;
 }
 
+.hamburger-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: var(--text-main);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 8px;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.hamburger-btn:hover {
+  background-color: var(--bg-accent);
+  color: var(--primary);
+}
+
 .location-badge {
   display: flex;
   align-items: center;
@@ -1723,6 +1742,10 @@ h1, h2, h3, h4, h5, h6,
 }
 
 @media (min-width: 768px) {
+  .hamburger-btn {
+    display: none;
+  }
+
   body {
     display: block;
     background-color: #f3f4f6;
