@@ -1419,6 +1419,38 @@ export default function App() {
             
             <div className="mobile-more-links-grid">
               <button 
+                className={`more-grid-link ${currentTab === 'home' ? 'active' : ''}`}
+                onClick={() => { setCurrentTab('home'); setShowMoreMenu(false); }}
+              >
+                <span className="more-link-icon">🏠</span>
+                <span className="more-link-label">Home</span>
+              </button>
+
+              <button 
+                className={`more-grid-link ${currentTab === 'leaflet' ? 'active' : ''}`}
+                onClick={() => { setCurrentTab('leaflet'); setShowMoreMenu(false); }}
+              >
+                <span className="more-link-icon">🏷️</span>
+                <span className="more-link-label">Promotions</span>
+              </button>
+
+              <button 
+                className={`more-grid-link ${currentTab === 'stores' ? 'active' : ''}`}
+                onClick={() => { setCurrentTab('stores'); setShowMoreMenu(false); }}
+              >
+                <span className="more-link-icon">📍</span>
+                <span className="more-link-label">Store Finder</span>
+              </button>
+
+              <button 
+                className={`more-grid-link ${currentTab === 'rewards' ? 'active' : ''}`}
+                onClick={() => { setCurrentTab('rewards'); setShowMoreMenu(false); }}
+              >
+                <span className="more-link-icon">🎁</span>
+                <span className="more-link-label">Rewards</span>
+              </button>
+
+              <button 
                 className={`more-grid-link ${currentTab === 'about' ? 'active' : ''}`}
                 onClick={() => { setCurrentTab('about'); setShowMoreMenu(false); }}
               >
@@ -1430,7 +1462,7 @@ export default function App() {
                 className={`more-grid-link ${currentTab === 'brands' ? 'active' : ''}`}
                 onClick={() => { setCurrentTab('brands'); setShowMoreMenu(false); }}
               >
-                <span className="more-link-icon">🏷️</span>
+                <span className="more-link-icon">🛍️</span>
                 <span className="more-link-label">Exclusive Brands</span>
               </button>
 

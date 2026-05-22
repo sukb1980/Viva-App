@@ -2432,7 +2432,8 @@ h1, h2, h3, h4, h5, h6,
 /* Mobile More Menu Overlay Drawer */
 .bottom-drawer {
   width: 100% !important;
-  max-height: 380px !important;
+  max-height: 80vh !important;
+  overflow-y: auto !important;
   bottom: 0 !important;
   right: 0 !important;
   border-radius: var(--radius-xl) var(--radius-xl) 0 0 !important;
@@ -2455,9 +2456,9 @@ h1, h2, h3, h4, h5, h6,
   background-color: var(--bg-main);
   border: 1px solid var(--border);
   border-radius: 12px;
-  padding: 16px;
+  padding: 12px 8px;
   cursor: pointer;
-  gap: 8px;
+  gap: 6px;
   transition: all 0.2s ease;
 }
 
