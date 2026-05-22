@@ -34,6 +34,7 @@ body {
   justify-content: center;
   align-items: center;
   min-height: 100vh;
+  min-height: 100dvh;
   overflow: hidden;
 }
 
@@ -77,6 +78,7 @@ h1, h2, h3, h4, h5, h6,
   width: 100%;
   max-width: 450px;
   height: 100vh;
+  height: 100dvh;
   max-height: 900px;
   background-color: var(--bg-main);
   position: relative;
@@ -192,14 +194,16 @@ h1, h2, h3, h4, h5, h6,
   bottom: 0;
   left: 0;
   right: 0;
-  height: 72px;
+  height: calc(72px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
   background-color: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
   border-top: 1px solid var(--border);
   display: flex;
   justify-content: space-around;
   align-items: center;
-  padding: 0 10px;
+  padding-left: 10px;
+  padding-right: 10px;
   z-index: 10;
 }
 
@@ -252,7 +256,7 @@ h1, h2, h3, h4, h5, h6,
 .app-content {
   flex: 1;
   overflow-y: auto;
-  padding-bottom: 84px; /* offset for tab bar */
+  padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px)); /* offset for tab bar + safe area */
   position: relative;
 }
 
