@@ -31,9 +31,76 @@ export default function App() {
   const [listCount, setListCount] = useState(0);
   const [toastMessage, setToastMessage] = useState('');
   
+  // Mobile drawer states
+  const [showMoreMenu, setShowMoreMenu] = useState(false);
+  
+  // Internal page sub-tabs
+  const [aboutSubTab, setAboutSubTab] = useState('about-us');
+  const [brandSubTab, setBrandSubTab] = useState('concept');
+  const [selectedStore, setSelectedStore] = useState(0);
+  
   // Scratch Card States
   const [homeScratchRevealed, setHomeScratchRevealed] = useState(false);
   const [rewardsScratchRevealed, setRewardsScratchRevealed] = useState(false);
+  // Gamification: reward points and daily spin
+  const WHEEL_SEGMENTS = [
+    { label: '5 Pts',    points: 5,   color: '#F8F0FB', textColor: '#7B3FA0' },
+    { label: 'AED 2',   points: 20,  color: '#FFF3E0', textColor: '#E65100', isVoucher: true },
+    { label: '10 Pts',  points: 10,  color: '#E8F5E9', textColor: '#2E7D32' },
+    { label: '30 Pts',  points: 30,  color: '#FFF8E1', textColor: '#F57F17' },
+    { label: 'AED 5',   points: 50,  color: '#FCE4EC', textColor: '#C62828', isVoucher: true },
+    { label: '15 Pts',  points: 15,  color: '#E3F2FD', textColor: '#1565C0' },
+    { label: '25 Pts',  points: 25,  color: '#F3E5F5', textColor: '#6A1B9A' },
+    { label: 'Try Again', points: 0, color: '#F5F5F5', textColor: '#9E9E9E' },
+  ];
+  const NUM_SEGMENTS = WHEEL_SEGMENTS.length;
+  const SEGMENT_DEG = 360 / NUM_SEGMENTS;
+  const [rewardPoints, setRewardPoints] = useState(0);
+  const [lastSpinDate, setLastSpinDate] = useState('');
+  const [showWheel, setShowWheel] = useState(false);
+  const [isSpinning, setIsSpinning] = useState(false);
+  const [spinAngle, setSpinAngle] = useState(0);
+  const [wonSegment, setWonSegment] = useState(null);
+  const [showResult, setShowResult] = useState(false);
+
+  const startSpin = () => {
+    const today = new Date().toDateString();
+    if (lastSpinDate === today) {
+      triggerToast('You have already spun today. Come back tomorrow! 🌅');
+      return;
+    }
+    // Pick a random winning segment index
+    const winIdx = Math.floor(Math.random() * NUM_SEGMENTS);
+    // The pointer is at the top (270° in standard coords).
+    // We want segment winIdx to stop under the pointer.
+    // Each segment starts at: winIdx * SEGMENT_DEG (from 0°)
+    // Mid of that segment: winIdx * SEGMENT_DEG + SEGMENT_DEG/2
+    // We need the wheel to rotate so that mid lands at the top.
+    const targetAngle = 360 - (winIdx * SEGMENT_DEG + SEGMENT_DEG / 2);
+    const totalAngle = 360 * 8 + targetAngle; // 8 full spins + landing angle
+    setWonSegment(winIdx);
+    setSpinAngle(totalAngle);
+    setIsSpinning(true);
+    setShowResult(false);
+  };
+
+  const onSpinEnd = () => {
+    if (!isSpinning) return;
+    setIsSpinning(false);
+    const seg = WHEEL_SEGMENTS[wonSegment];
+    if (seg.points > 0) {
+      setRewardPoints(prev => prev + seg.points);
+    }
+    setLastSpinDate(new Date().toDateString());
+    setShowResult(true);
+  };
+
+  const closeWheel = () => {
+    setShowWheel(false);
+    setShowResult(false);
+    setIsSpinning(false);
+    setSpinAngle(0);
+  };
   
   // Countdown Timer
   const [timeLeft, setTimeLeft] = useState({ hours: 2, minutes: 14, seconds: 55 });
@@ -41,6 +108,67 @@ export default function App() {
   // Modals & Drawers
   const [deepLinkPartner, setDeepLinkPartner] = useState(null);
   const [showChatDrawer, setShowChatDrawer] = useState(false);
+
+  // Store Locator data
+  const storesData = [
+    {
+      id: 0,
+      name: "VIVA Grand Avenue Sharjah",
+      address: "Grand Avenue Mall, Al Nasriya, Sharjah, UAE",
+      timings: "08:00 AM - 01:00 AM daily",
+      phone: "+971 6 567 1234",
+      mapUrl: "https://maps.google.com/maps?q=VIVA%20Supermarket%20-%20Grand%20Avenue%20Sharjah&t=&z=13&ie=UTF8&iwloc=&output=embed"
+    },
+    {
+      id: 1,
+      name: "VIVA Ajman 1",
+      address: "Al Bustan Building, Sheikh Khalifa Bin Zayed St, Ajman, UAE",
+      timings: "08:00 AM - 01:00 AM daily",
+      phone: "+971 6 742 5678",
+      mapUrl: "https://maps.google.com/maps?q=VIVA%20Supermarket%20-%20Ajman&t=&z=13&ie=UTF8&iwloc=&output=embed"
+    },
+    {
+      id: 2,
+      name: "VIVA Hor Al Anz East",
+      address: "Hor Al Anz East, Deira, Dubai, UAE",
+      timings: "08:00 AM - 01:00 AM daily",
+      phone: "+971 4 238 9876",
+      mapUrl: "https://maps.google.com/maps?q=VIVA%20Supermarket%20-%20Hor%20Al%20Anz&t=&z=13&ie=UTF8&iwloc=&output=embed"
+    },
+    {
+      id: 3,
+      name: "VIVA Al Nahda Sharjah",
+      address: "Ground Floor, Al Nahda Tower, Al Nahda 2, Sharjah, UAE",
+      timings: "07:00 AM - 12:00 Midnight daily",
+      phone: "+971 6 534 4321",
+      mapUrl: "https://maps.google.com/maps?q=VIVA%20Supermarket%20-%20Al%20Nahda%20Sharjah&t=&z=13&ie=UTF8&iwloc=&output=embed"
+    }
+  ];
+
+  // Events/Openings Showcase data
+  const eventsData = [
+    {
+      id: 1,
+      title: "New Store Opening - Ajman Bustan",
+      date: "May 15, 2026",
+      desc: "Celebrating our new branch opening ceremony in Ajman with massive voucher discounts and full baskets!",
+      img: "https://images.unsplash.com/photo-1542838132-92c53300491e?w=500&auto=format&fit=crop&q=60"
+    },
+    {
+      id: 2,
+      title: "VIVA Grand Avenue Anniversary",
+      date: "April 28, 2026",
+      desc: "Honoring 2 years of providing cheaper and fresher groceries to Sharjah Al Nasriya residents.",
+      img: "https://images.unsplash.com/photo-1578916171728-46686eac8d58?w=500&auto=format&fit=crop&q=60"
+    },
+    {
+      id: 3,
+      title: "VIVA Hor Al Anz Ribbon Cutting",
+      date: "March 10, 2026",
+      desc: "Welcoming hundreds of Deira residents with half-price deals on imported European cheese and chocolates.",
+      img: "https://images.unsplash.com/photo-1604719312566-8912e9227c6a?w=500&auto=format&fit=crop&q=60"
+    }
+  ];
   
   // WhatsApp Simulated Chat
   const [chatMessages, setChatMessages] = useState([
@@ -160,18 +288,72 @@ export default function App() {
           VIVA <span className="brand-plus">Plus+</span>
         </div>
         
-        <div className="location-badge" onClick={() => triggerToast("Location updated to Sharjah, Al Nahda 2")}>
-          <MapPin size={12} />
-          <span>Sharjah, Al Nahda 2</span>
-        </div>
+        {/* Desktop Navigation Links */}
+        <nav className="header-nav">
+          <button 
+            className={`header-nav-item ${currentTab === 'home' ? 'active' : ''}`}
+            onClick={() => setCurrentTab('home')}
+          >
+            Home
+          </button>
+          <button 
+            className={`header-nav-item ${currentTab === 'about' ? 'active' : ''}`}
+            onClick={() => setCurrentTab('about')}
+          >
+            About VIVA
+          </button>
+          <button 
+            className={`header-nav-item ${currentTab === 'leaflet' ? 'active' : ''}`}
+            onClick={() => setCurrentTab('leaflet')}
+          >
+            Promotions
+          </button>
+          <button 
+            className={`header-nav-item ${currentTab === 'brands' ? 'active' : ''}`}
+            onClick={() => setCurrentTab('brands')}
+          >
+            Exclusive Brands
+          </button>
+          <button 
+            className={`header-nav-item ${currentTab === 'stores' ? 'active' : ''}`}
+            onClick={() => setCurrentTab('stores')}
+          >
+            Store Finder
+          </button>
+          <button 
+            className={`header-nav-item ${currentTab === 'events' ? 'active' : ''}`}
+            onClick={() => setCurrentTab('events')}
+          >
+            Events
+          </button>
+          <button 
+            className={`header-nav-item ${currentTab === 'rewards' ? 'active' : ''}`}
+            onClick={() => setCurrentTab('rewards')}
+          >
+            Rewards
+          </button>
+          <button 
+            className={`header-nav-item ${currentTab === 'support' ? 'active' : ''}`}
+            onClick={() => setCurrentTab('support')}
+          >
+            Support
+          </button>
+        </nav>
+        
+        <div className="header-right">
+          <div className="location-badge" onClick={() => triggerToast("Location updated to Sharjah, Al Nahda 2")}>
+            <MapPin size={12} />
+            <span>Sharjah, Al Nahda 2</span>
+          </div>
 
-        <button className="profile-btn" onClick={() => triggerToast("Profile settings coming soon!")} aria-label="Profile">
-          <User size={18} />
-        </button>
+          <button className="profile-btn" onClick={() => triggerToast("Profile settings coming soon!")} aria-label="Profile">
+            <User size={18} />
+          </button>
+        </div>
       </header>
 
       {/* Main Content Area */}
-      <main className="app-content">
+      <div className="app-content">
         
         {/* TAB 1: HOME */}
         {currentTab === 'home' && (
@@ -428,6 +610,14 @@ export default function App() {
                   <span>Add to In-Store Shopping List</span>
                 </button>
 
+                <button 
+                  className="btn-secondary-action" 
+                  onClick={() => triggerToast("Downloading Weekly Leaflet PDF Booklet...")}
+                  style={{ backgroundColor: '#f5f5f5', border: '1px solid #ddd', color: 'var(--text-main)', fontWeight: '600' }}
+                >
+                  📥 Download Booklet PDF
+                </button>
+
                 <div className="aisle-locator">
                   <MapPin size={16} />
                   <span>Find in Aisle 4 - Al Nahda Branch</span>
@@ -466,54 +656,193 @@ export default function App() {
                   <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#E65100' }}>Expiring soon!</div>
                 </div>
               </div>
-
-              <div className="voucher-dash-divider"></div>
-
+              <div className="voucher-dash-divider" />
               {/* Barcode representation */}
               <div className="barcode-wrapper">
-                <div className="barcode-canvas">
-                  <div className="barcode-line" style={{ width: '4px' }}></div>
-                  <div className="barcode-line" style={{ width: '1px' }}></div>
-                  <div className="barcode-line" style={{ width: '2px' }}></div>
-                  <div className="barcode-line" style={{ width: '5px' }}></div>
-                  <div className="barcode-line" style={{ width: '1px' }}></div>
-                  <div className="barcode-line" style={{ width: '3px' }}></div>
-                  <div className="barcode-line" style={{ width: '4px' }}></div>
-                  <div className="barcode-line" style={{ width: '2px' }}></div>
-                  <div className="barcode-line" style={{ width: '6px' }}></div>
-                  <div className="barcode-line" style={{ width: '1px' }}></div>
-                  <div className="barcode-line" style={{ width: '3px' }}></div>
-                  <div className="barcode-line" style={{ width: '5px' }}></div>
-                  <div className="barcode-line" style={{ width: '2px' }}></div>
-                  <div className="barcode-line" style={{ width: '4px' }}></div>
+                <div 
+                  className="barcode-canvas" 
+                  style={{ 
+                    display: 'flex', 
+                    justifyContent: 'center', 
+                    alignItems: 'stretch', 
+                    gap: 0, 
+                    padding: '6px 20px', 
+                    backgroundColor: 'white',
+                    borderRadius: '6px',
+                    border: '1px solid #e0e0e0',
+                    width: 'auto',
+                    height: '60px',
+                    boxSizing: 'border-box'
+                  }}
+                >
+                  {[
+                    2, -2, 1, -4, 3, -2, 1, -2, 2, -6, 4, -2, 1, -4, 2, -2, 3, -4, 1, -2, 2, -2, 4, -4, 1, -2, 3, -2, 2, -6, 1, -2, 2, -2, 3, -4, 1, -2, 2
+                  ].map((val, idx) => (
+                    <div
+                      key={idx}
+                      style={{
+                        width: `${Math.abs(val) * 1.5}px`,
+                        backgroundColor: val > 0 ? '#000' : 'transparent',
+                        height: '100%'
+                      }}
+                    />
+                  ))}
                 </div>
                 <div className="barcode-num">VIVAPLUS-98317-2026</div>
               </div>
-              <p style={{ fontSize: '0.6rem', color: 'var(--text-muted)', textAlign: 'center' }}>Present to the cashier at checkout screen</p>
+              <p style={{ fontSize: '0.6rem', color: 'var(--text-muted)', textAlign: 'center' }}>
+                Present to the cashier at checkout screen
+              </p>
             </div>
 
             {/* Gamified Scratch Card */}
             <div className="gamified-scratch">
-              <h3 style={{ fontSize: '0.95rem', fontWeight: 800 }}>⚡ Scratch & Win Special Offer</h3>
-              <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Reveal your exclusive daily discount voucher below</p>
-              
+              <h3 style={{ fontSize: '0.95rem', fontWeight: 800 }}>⚡ Scratch &amp; Win Special Offer</h3>
+              <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                Reveal your exclusive daily discount voucher below
+              </p>
               <div className="scratch-canvas-container" onClick={() => setRewardsScratchRevealed(true)}>
                 <div className={`scratch-silver-mask ${rewardsScratchRevealed ? 'scratch-active' : ''}`}>
                   <Sparkles size={24} style={{ color: 'white' }} />
                   <span style={{ fontWeight: 700, fontSize: '0.85rem', marginTop: '4px' }}>Tap or Scratch Here</span>
                 </div>
-
                 <div className="scratch-revealed-content">
                   <div style={{ fontSize: '1.25rem', fontWeight: 900, color: 'var(--primary)' }}>🎉 15% OFF</div>
                   <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#1A1A1A' }}>Fresh Bakery Items</div>
-                  <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', marginTop: '4px' }}>Auto-added to your wallet!</div>
+                  <div style={{ fontSize: '0.6rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+                    Auto-added to your wallet!
+                  </div>
+                </div>
+                <div className="scratch-instruction">
+                  {!rewardsScratchRevealed ? 'Tap to reveal rewards instantly' : 'Discount added to VIVA loyalty account!'}
                 </div>
               </div>
-
-              <div className="scratch-instruction">
-                {!rewardsScratchRevealed ? 'Tap to reveal rewards instantly' : 'Discount added to VIVA loyalty account!'}
-              </div>
             </div>
+
+            {/* Gamification Panel */}
+            <div className="gamification-panel">
+              <div className="gamification-header">
+                <div className="gamification-points-badge">
+                  <span className="gamification-points-num">{rewardPoints}</span>
+                  <span className="gamification-points-label">Points</span>
+                </div>
+                <div className="gamification-info">
+                  <h3 className="panel-title">🎡 Spin &amp; Win!</h3>
+                  <p className="gamification-sub">Spin daily for bonus points &amp; vouchers</p>
+                </div>
+              </div>
+              <button
+                className={`spin-trigger-btn ${lastSpinDate === new Date().toDateString() ? 'spin-trigger-btn--used' : ''}`}
+                onClick={() => { setShowWheel(true); }}
+              >
+                {lastSpinDate === new Date().toDateString() ? '✅ Spun Today — Come Back Tomorrow!' : '🎡 Spin the Wheel Now'}
+              </button>
+            </div>
+
+            {/* Wheel Modal */}
+            {showWheel && (
+              <div className="spin-wheel-backdrop" onClick={!isSpinning ? closeWheel : undefined}>
+                <div className="spin-wheel-modal" onClick={e => e.stopPropagation()}>
+                  {/* Close btn */}
+                  {!isSpinning && (
+                    <button className="spin-close-btn" onClick={closeWheel}>✕</button>
+                  )}
+
+                  <p className="spin-modal-title">🎰 Spin &amp; Win</p>
+
+                  {/* Wheel container with pointer */}
+                  <div className="wheel-outer-wrapper">
+                    {/* Pointer / needle at top */}
+                    <div className="wheel-pointer">▼</div>
+
+                    {/* The spinning wheel drawn via SVG segments */}
+                    <div
+                      className="wheel-disc"
+                      style={{
+                        transform: `rotate(${spinAngle}deg)`,
+                        transition: isSpinning ? 'transform 5s cubic-bezier(0.17,0.67,0.12,1)' : 'none'
+                      }}
+                      onTransitionEnd={onSpinEnd}
+                    >
+                      <svg viewBox="0 0 200 200" width="220" height="220">
+                        {WHEEL_SEGMENTS.map((seg, idx) => {
+                          const startAngle = (idx * SEGMENT_DEG - 90) * (Math.PI / 180);
+                          const endAngle = ((idx + 1) * SEGMENT_DEG - 90) * (Math.PI / 180);
+                          const x1 = 100 + 100 * Math.cos(startAngle);
+                          const y1 = 100 + 100 * Math.sin(startAngle);
+                          const x2 = 100 + 100 * Math.cos(endAngle);
+                          const y2 = 100 + 100 * Math.sin(endAngle);
+                          const midAngle = ((idx + 0.5) * SEGMENT_DEG - 90) * (Math.PI / 180);
+                          const tx = 100 + 62 * Math.cos(midAngle);
+                          const ty = 100 + 62 * Math.sin(midAngle);
+                          const textRot = (idx + 0.5) * SEGMENT_DEG;
+                          return (
+                            <g key={idx}>
+                              <path
+                                d={`M100,100 L${x1},${y1} A100,100 0 0,1 ${x2},${y2} Z`}
+                                fill={seg.color}
+                                stroke="white"
+                                strokeWidth="1.5"
+                              />
+                              <text
+                                x={tx}
+                                y={ty}
+                                textAnchor="middle"
+                                dominantBaseline="middle"
+                                fontSize="9"
+                                fontWeight="700"
+                                fill={seg.textColor}
+                                transform={`rotate(${textRot}, ${tx}, ${ty})`}
+                              >
+                                {seg.label}
+                              </text>
+                            </g>
+                          );
+                        })}
+                        {/* Center hub */}
+                        <circle cx="100" cy="100" r="14" fill="white" stroke="#ddd" strokeWidth="2" />
+                        <text x="100" y="100" textAnchor="middle" dominantBaseline="middle" fontSize="12">🎁</text>
+                      </svg>
+                    </div>
+                  </div>
+
+                  {/* Spin button inside modal */}
+                  {!isSpinning && !showResult && (
+                    <button className="spin-go-btn" onClick={startSpin}>
+                      TAP TO SPIN!
+                    </button>
+                  )}
+
+                  {isSpinning && (
+                    <p className="spin-status-text">✨ Spinning… good luck!</p>
+                  )}
+
+                  {/* Result reveal */}
+                  {showResult && wonSegment !== null && (
+                    <div className="spin-result-card">
+                      {WHEEL_SEGMENTS[wonSegment].points > 0 ? (
+                        <>
+                          <div className="spin-result-emoji">🎉</div>
+                          <div className="spin-result-headline">
+                            {WHEEL_SEGMENTS[wonSegment].isVoucher
+                              ? `You won a ${WHEEL_SEGMENTS[wonSegment].label} Voucher!`
+                              : `You won ${WHEEL_SEGMENTS[wonSegment].points} Points!`}
+                          </div>
+                          <div className="spin-result-sub">Credited to your VIVA loyalty account</div>
+                        </>
+                      ) : (
+                        <>
+                          <div className="spin-result-emoji">😅</div>
+                          <div className="spin-result-headline">Better luck tomorrow!</div>
+                          <div className="spin-result-sub">Come back daily for another spin</div>
+                        </>
+                      )}
+                      <button className="spin-result-close" onClick={closeWheel}>Collect &amp; Close</button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -590,7 +919,271 @@ export default function App() {
           </div>
         )}
 
-      </main>
+        {/* TAB 5: ABOUT VIVA */}
+        {currentTab === 'about' && (
+          <div className="tabbed-page-container">
+            <div className="tabbed-sidebar">
+              <button 
+                className={`sidebar-tab-btn ${aboutSubTab === 'about-us' ? 'active' : ''}`}
+                onClick={() => setAboutSubTab('about-us')}
+              >
+                About Us
+              </button>
+              <button 
+                className={`sidebar-tab-btn ${aboutSubTab === 'vision' ? 'active' : ''}`}
+                onClick={() => setAboutSubTab('vision')}
+              >
+                Our Vision & Mission
+              </button>
+              <button 
+                className={`sidebar-tab-btn ${aboutSubTab === 'promise' ? 'active' : ''}`}
+                onClick={() => setAboutSubTab('promise')}
+              >
+                Brand Promise
+              </button>
+            </div>
+
+            <div className="tabbed-content-panel">
+              {aboutSubTab === 'about-us' && (
+                <div>
+                  <h2 className="panel-title">About VIVA</h2>
+                  <div className="panel-underline"></div>
+                  <p className="panel-text">
+                    VIVA is the UAE’s first food discounter, offering high-quality food and non-food products at investor-defying prices. Launched in 2018 under the Landmark Group umbrella, VIVA has grown to operate more than 100+ stores across the United Arab Emirates.
+                  </p>
+                  <p className="panel-text">
+                    We operate on a discount supermarket model, which means direct sourcing, highly optimized logistics, and passing 100% of these operational savings straight to our shoppers.
+                  </p>
+                  <div className="highlight-box">
+                    <h3>Fresher. Cheaper. Better.</h3>
+                    <p>Everyday low prices, fresh local produce, and unique European brands delivered straight to your local neighborhood.</p>
+                  </div>
+                </div>
+              )}
+
+              {aboutSubTab === 'vision' && (
+                <div>
+                  <h2 className="panel-title">Our Vision & Mission</h2>
+                  <div className="panel-underline"></div>
+                  <div className="vision-card">
+                    <h3>Our Vision</h3>
+                    <p>To be the leading and most trusted discount supermarket chain in the region, enriching lives by offering high quality products at unbeatable prices.</p>
+                  </div>
+                  <div className="vision-card">
+                    <h3>Our Mission</h3>
+                    <p>To build lifetime customer loyalty by continuously offering a curated assortment of fresh, premium-quality products at prices that are at least 30% cheaper than traditional retailers, backed by an efficient supply chain.</p>
+                  </div>
+                </div>
+              )}
+
+              {aboutSubTab === 'promise' && (
+                <div>
+                  <h2 className="panel-title">Brand Promise</h2>
+                  <div className="panel-underline"></div>
+                  <p className="panel-text">
+                    Our promise to you is built on three foundational pillars: <strong>Fresher, Cheaper, Better</strong>. We maintain these standards through a series of supply chain check-gates:
+                  </p>
+                  <ul className="promise-list">
+                    <li>
+                      <strong>Direct Sourcing:</strong> By cutting out middlemen and sourcing directly from top-tier European and regional manufacturers, we secure deep wholesale discounts.
+                    </li>
+                    <li>
+                      <strong>Rigorous Quality Control:</strong> Every batch of fresh fruit, vegetables, and private label items is inspected daily by our Quality Assurance teams.
+                    </li>
+                    <li>
+                      <strong>Smart Assortment:</strong> We stock exactly what you need without unnecessary display costs, ensuring ultra-fast turnover and maximum freshness.
+                    </li>
+                  </ul>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* TAB 6: EXCLUSIVE BRANDS */}
+        {currentTab === 'brands' && (
+          <div className="tabbed-page-container">
+            <div className="tabbed-sidebar">
+              <button 
+                className={`sidebar-tab-btn ${brandSubTab === 'concept' ? 'active' : ''}`}
+                onClick={() => setBrandSubTab('concept')}
+              >
+                Exclusive Private Brands
+              </button>
+              <button 
+                className={`sidebar-tab-btn ${brandSubTab === 'standards' ? 'active' : ''}`}
+                onClick={() => setBrandSubTab('standards')}
+              >
+                Quality Standards
+              </button>
+              <button 
+                className={`sidebar-tab-btn ${brandSubTab === 'safety' ? 'active' : ''}`}
+                onClick={() => setBrandSubTab('safety')}
+              >
+                Food Safety
+              </button>
+            </div>
+
+            <div className="tabbed-content-panel">
+              {brandSubTab === 'concept' && (
+                <div>
+                  <h2 className="panel-title">VIVA Exclusive Private Brands</h2>
+                  <div className="panel-underline"></div>
+                  <p className="panel-text">
+                    VIVA private labels are unique brands developed in partnership with leading global manufacturers. By controlling production, design, and distribution, we guarantee products of equal or superior quality to international household brands but at prices that are at least <strong>30% cheaper</strong>.
+                  </p>
+                  <div className="brand-metrics-grid">
+                    <div className="metric-box">
+                      <span className="metric-num">30%+</span>
+                      <span className="metric-label">Cheaper than competitors</span>
+                    </div>
+                    <div className="metric-box">
+                      <span className="metric-num">80%</span>
+                      <span className="metric-label">Direct Import Share</span>
+                    </div>
+                    <div className="metric-box">
+                      <span className="metric-num">100%</span>
+                      <span className="metric-label">Satisfaction Guaranteed</span>
+                    </div>
+                  </div>
+                  <p className="panel-text" style={{ marginTop: '16px' }}>
+                    From European chocolates to fresh milk and cleaning detergents, our exclusive brands provide premium choices for every basket.
+                  </p>
+                </div>
+              )}
+
+              {brandSubTab === 'standards' && (
+                <div>
+                  <h2 className="panel-title">Quality Assurance Standards</h2>
+                  <div className="panel-underline"></div>
+                  <p className="panel-text">
+                    We hold our manufacturers to the highest international food standard certification requirements (including BRC, IFS, and ISO 22000). 
+                  </p>
+                  <div className="standards-steps">
+                    <div className="step-item">
+                      <span className="step-badge">1</span>
+                      <div>
+                        <h4>Strict Supplier Auditing</h4>
+                        <p>We audit our factories regularly to ensure absolute sanitary compliance and ingredient integrity.</p>
+                      </div>
+                    </div>
+                    <div className="step-item">
+                      <span className="step-badge">2</span>
+                      <div>
+                        <h4>VIVA Test Kitchen</h4>
+                        <p>Our culinary specialists test every batch for taste, consistency, texture, and nutritional value before approving store release.</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {brandSubTab === 'safety' && (
+                <div>
+                  <h2 className="panel-title">Food Safety & Compliance</h2>
+                  <div className="panel-underline"></div>
+                  <p className="panel-text">
+                    VIVA is committed to absolute compliance with UAE Municipality Health and Food Safety directives.
+                  </p>
+                  <div className="safety-grid">
+                    <div className="safety-card">
+                      <h4>Cold Chain Maintenance</h4>
+                      <p>State-of-the-art refrigerated vehicles and in-store cold cases ensure temperature is logged automatically 24/7.</p>
+                    </div>
+                    <div className="safety-card">
+                      <h4>Clear Labeling & Tracing</h4>
+                      <p>Batch tracking system allows us to pinpoint origins immediately, providing full traceability from farm to checkout.</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* TAB 7: INTERACTIVE STORE FINDER */}
+        {currentTab === 'stores' && (
+          <div className="stores-view-container">
+            <div className="store-sidebar">
+              <h3 className="sidebar-header-title">Our Branches</h3>
+              <div className="store-list-scroll">
+                {storesData.map((store, index) => (
+                  <div 
+                    key={store.id} 
+                    className={`store-list-item ${selectedStore === index ? 'active' : ''}`}
+                    onClick={() => setSelectedStore(index)}
+                  >
+                    <h4>{store.name}</h4>
+                    <p className="store-short-address">{store.address.split(',')[0]}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="store-details-panel">
+              <div className="store-info-header">
+                <h2>{storesData[selectedStore].name}</h2>
+                <div className="store-detail-row">
+                  <MapPin size={16} color="var(--primary)" />
+                  <span>{storesData[selectedStore].address}</span>
+                </div>
+                <div className="store-detail-row">
+                  <Clock size={16} color="#FB8C00" />
+                  <span>{storesData[selectedStore].timings}</span>
+                </div>
+                <div className="store-detail-row">
+                  <Phone size={16} color="#4CAF50" />
+                  <span>{storesData[selectedStore].phone}</span>
+                </div>
+                <a 
+                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(storesData[selectedStore].name)}`}
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="get-directions-btn"
+                >
+                  Get Directions
+                </a>
+              </div>
+
+              <div className="store-map-wrapper">
+                <iframe 
+                  title={`Map of ${storesData[selectedStore].name}`}
+                  src={storesData[selectedStore].mapUrl} 
+                  className="store-map-iframe"
+                  allowFullScreen="" 
+                  loading="lazy" 
+                  referrerPolicy="no-referrer-when-downgrade"
+                ></iframe>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* TAB 8: EVENTS / OPENINGS SHOWCASE */}
+        {currentTab === 'events' && (
+          <div className="events-gallery-container">
+            <div className="events-intro-header">
+              <h2>Spreading Our Roots All Over UAE</h2>
+              <p>Take a look at our latest store grand opening ceremonies, spreading everyday savings to more neighborhoods.</p>
+            </div>
+
+            <div className="events-grid-layout">
+              {eventsData.map(event => (
+                <div key={event.id} className="event-gallery-card">
+                  <div className="event-card-img-container">
+                    <img src={event.img} alt={event.title} className="event-card-img" />
+                    <span className="event-date-badge">{event.date}</span>
+                  </div>
+                  <div className="event-card-body">
+                    <h3>{event.title}</h3>
+                    <p>{event.desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
 
       {/* WhatsApp Chat Drawer */}
       {showChatDrawer && (
@@ -672,11 +1265,13 @@ export default function App() {
         </div>
       )}
 
+      </div>
+
       {/* Sticky Bottom Navigation Bar */}
       <nav className="bottom-nav">
         <button 
           className={`nav-item ${currentTab === 'home' ? 'active' : ''}`}
-          onClick={() => setCurrentTab('home')}
+          onClick={() => { setCurrentTab('home'); setShowMoreMenu(false); }}
         >
           <Home size={20} />
           <span>Home</span>
@@ -685,7 +1280,7 @@ export default function App() {
 
         <button 
           className={`nav-item ${currentTab === 'leaflet' ? 'active' : ''}`}
-          onClick={() => setCurrentTab('leaflet')}
+          onClick={() => { setCurrentTab('leaflet'); setShowMoreMenu(false); }}
         >
           <Tag size={20} />
           <span>Leaflet</span>
@@ -693,8 +1288,17 @@ export default function App() {
         </button>
 
         <button 
+          className={`nav-item ${currentTab === 'stores' ? 'active' : ''}`}
+          onClick={() => { setCurrentTab('stores'); setShowMoreMenu(false); }}
+        >
+          <MapPin size={20} />
+          <span>Stores</span>
+          <span className="nav-indicator"></span>
+        </button>
+
+        <button 
           className={`nav-item ${currentTab === 'rewards' ? 'active' : ''}`}
-          onClick={() => setCurrentTab('rewards')}
+          onClick={() => { setCurrentTab('rewards'); setShowMoreMenu(false); }}
         >
           <Gift size={20} />
           <span>Rewards</span>
@@ -702,11 +1306,11 @@ export default function App() {
         </button>
 
         <button 
-          className={`nav-item ${currentTab === 'support' ? 'active' : ''}`}
-          onClick={() => setCurrentTab('support')}
+          className={`nav-item ${showMoreMenu ? 'active' : ''}`}
+          onClick={() => setShowMoreMenu(prev => !prev)}
         >
-          <MessageCircle size={20} />
-          <span>Support</span>
+          <Sparkles size={20} />
+          <span>More</span>
           <span className="nav-indicator"></span>
         </button>
 
@@ -737,6 +1341,54 @@ export default function App() {
           </div>
         )}
       </nav>
+
+      {/* Mobile More Menu Bottom Drawer */}
+      {showMoreMenu && (
+        <div className="drawer-backdrop show" onClick={() => setShowMoreMenu(false)} style={{ zIndex: 9999 }}>
+          <div className="drawer-content show bottom-drawer" onClick={(e) => e.stopPropagation()}>
+            <div className="drawer-header">
+              <span className="drawer-title" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: '700' }}>Explore VIVA</span>
+              <button className="drawer-close" onClick={() => setShowMoreMenu(false)}>
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="mobile-more-links-grid">
+              <button 
+                className={`more-grid-link ${currentTab === 'about' ? 'active' : ''}`}
+                onClick={() => { setCurrentTab('about'); setShowMoreMenu(false); }}
+              >
+                <span className="more-link-icon">🏢</span>
+                <span className="more-link-label">About VIVA</span>
+              </button>
+
+              <button 
+                className={`more-grid-link ${currentTab === 'brands' ? 'active' : ''}`}
+                onClick={() => { setCurrentTab('brands'); setShowMoreMenu(false); }}
+              >
+                <span className="more-link-icon">🏷️</span>
+                <span className="more-link-label">Exclusive Brands</span>
+              </button>
+
+              <button 
+                className={`more-grid-link ${currentTab === 'events' ? 'active' : ''}`}
+                onClick={() => { setCurrentTab('events'); setShowMoreMenu(false); }}
+              >
+                <span className="more-link-icon">📸</span>
+                <span className="more-link-label">Events & Openings</span>
+              </button>
+
+              <button 
+                className={`more-grid-link ${currentTab === 'support' ? 'active' : ''}`}
+                onClick={() => { setCurrentTab('support'); setShowMoreMenu(false); }}
+              >
+                <span className="more-link-icon">💬</span>
+                <span className="more-link-label">Customer Support</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
