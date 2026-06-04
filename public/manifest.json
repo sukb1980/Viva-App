@@ -1,17 +1,17 @@
 {
-  "name": "VIVA Plus+ Grocery & Loyalty",
-  "short_name": "VIVA Plus+",
-  "description": "Middle Eastern Discount Grocery E-Commerce & Loyalty App",
+  "name": "VIVA Supermarket – Highest Quality at Cheapest Prices",
+  "short_name": "VIVA",
+  "description": "Shop highest quality grocery products from VIVA, the cheapest supermarket in Dubai & UAE. Exclusive deals, loyalty rewards & more.",
   "start_url": "./",
   "display": "standalone",
-  "background_color": "#F9F9F9",
+  "background_color": "#E31B23",
   "theme_color": "#E31B23",
   "orientation": "portrait-primary",
   "icons": [
     {
-      "src": "favicon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
+      "src": "viva-logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
       "purpose": "any"
     },
     {

@@ -391,9 +391,11 @@ export default function App() {
       {/* Top Header */}
       <header className="app-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div className="brand-title">
-            VIVA <span className="brand-plus">Plus+</span>
-          </div>
+          <img
+            src={import.meta.env.BASE_URL + "viva-logo.png"}
+            alt="VIVA Supermarket"
+            className="brand-logo-img"
+          />
         </div>
         
         {/* Desktop Navigation Links */}
@@ -509,11 +511,11 @@ export default function App() {
               <div className="pwa-install-banner animate-slide-in">
                 <div className="pwa-install-body">
                   <img 
-                    src={import.meta.env.BASE_URL + "icon-192x192.png"} 
+                    src={import.meta.env.BASE_URL + "viva-logo.png"} 
                     alt="VIVA Icon" 
                     className="pwa-install-logo"
                     onError={(e) => {
-                      e.target.src = 'favicon.svg';
+                      e.target.src = 'icon-192x192.png';
                     }}
                   />
                   <div className="pwa-install-text-content">
@@ -1601,11 +1603,11 @@ export default function App() {
             <div className="pwa-guidance-header">
               <div className="pwa-guidance-logo-wrapper">
                 <img 
-                  src={import.meta.env.BASE_URL + "icon-192x192.png"} 
+                  src={import.meta.env.BASE_URL + "viva-logo.png"} 
                   alt="VIVA Icon" 
                   className="pwa-guidance-logo"
                   onError={(e) => {
-                    e.target.src = 'favicon.svg';
+                    e.target.src = 'icon-192x192.png';
                   }}
                 />
               </div>
