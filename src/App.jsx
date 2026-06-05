@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Home,
   Tag,
@@ -56,8 +56,51 @@ const CAROUSEL_SLIDES = [
   }
 ];
 
+// Product catalog for Hot Deals / Promotions page
+const HOT_DEALS_PRODUCTS = [
+  {
+    id: 'amica-chips',
+    img: 'https://images.unsplash.com/photo-1566478989037-eec170784d0b?w=300&auto=format&fit=crop&q=60',
+    imgFallback: 'https://placehold.co/250x180/FFF0F1/CE1126?text=Amica+Chips+BBQ',
+    alt: 'Amica Kettle Chips BBQ 130g',
+    country: '🇮🇹 Imported from Italy',
+    discount: '-24%',
+    flag: '🇮🇹 Italy',
+    savePct: 'Save 24%',
+    rating: 4.8,
+    ratingCount: '85 ratings',
+    name: 'Amica Kettle Chips BBQ 130g',
+    desc: 'Crispy, premium hand-cooked kettle chips loaded with sweet and smoky Italian BBQ spices. Perfectly packed to preserve freshness.',
+    priceNow: 'AED 7.99',
+    priceOld: 'AED 10.50',
+    priceNowRaw: 7.99,
+    priceOldRaw: 10.50,
+    aisle: 'Aisle 4 - Al Nahda Branch',
+  },
+  {
+    id: 'coosur-olive-oil',
+    img: 'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=300&auto=format&fit=crop&q=60',
+    imgFallback: 'https://placehold.co/250x180/FFF0F1/CE1126?text=Olive+Oil',
+    alt: 'Coosur Extra Virgin Olive Oil 1L',
+    country: '🇪🇸 Imported from Spain',
+    discount: '-30%',
+    flag: '🇪🇸 Spain',
+    savePct: 'Save 30%',
+    rating: 4.9,
+    ratingCount: '120 ratings',
+    name: 'Coosur Extra Virgin Olive Oil 1L',
+    desc: 'Cold-pressed premium extra virgin olive oil sourced from the sun-drenched Andalusian groves of Spain. Rich, golden, and full of natural antioxidants.',
+    priceNow: 'AED 24.50',
+    priceOld: 'AED 35.00',
+    priceNowRaw: 24.50,
+    priceOldRaw: 35.00,
+    aisle: 'Aisle 7 - Grand Avenue Branch',
+  },
+];
+
 export default function App() {
   const [currentTab, setCurrentTab] = useState('home');
+  const [selectedProductId, setSelectedProductId] = useState(HOT_DEALS_PRODUCTS[0].id);
   const [listCount, setListCount] = useState(0);
   const [toastMessage, setToastMessage] = useState('');
   const [activeSlide, setActiveSlide] = useState(0);
@@ -224,9 +267,45 @@ export default function App() {
   ]);
   const [typedMessage, setTypedMessage] = useState('');
   const chatEndRef = useRef(null);
+  const contentRef = useRef(null);
+  // Flag (not state) set by Home Delivery button — no re-render needed
+  const deliveryScrollRef = useRef(false);
 
   // FAQ Accordion State
   const [openFaq, setOpenFaq] = useState(null);
+
+  // Scroll content area to top on every tab change
+  // Uses direct scrollTop assignment (works on all browsers incl. iOS Safari)
+  // and also resets window scroll as fallback for mobile viewports
+  useEffect(() => {
+    // Defer to next tick so React has painted the new tab content first
+    const id = setTimeout(() => {
+      if (contentRef.current) {
+        contentRef.current.scrollTop = 0;
+      }
+      // Fallback: reset the window/document scroll (mobile browsers sometimes
+      // scroll the viewport instead of the inner overflow container)
+      window.scrollTo(0, 0);
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+
+      // If the user came via the Home Delivery shortcut, scroll down to
+      // the delivery partners section after the top-reset settles.
+      if (deliveryScrollRef.current) {
+        deliveryScrollRef.current = false;
+        // Small extra delay so the top-reset has fully committed first
+        setTimeout(() => {
+          const target = contentRef.current
+            ? contentRef.current.querySelector('#delivery-partners')
+            : document.getElementById('delivery-partners');
+          if (target) {
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }, 80);
+      }
+    }, 0);
+    return () => clearTimeout(id);
+  }, [currentTab]);
 
   // Countdown timer effect
   useEffect(() => {
@@ -463,7 +542,7 @@ export default function App() {
       </header>
 
       {/* Main Content Area */}
-      <div className="app-content">
+      <div className="app-content" ref={contentRef}>
         
         {/* TAB 1: HOME */}
         {currentTab === 'home' && (
@@ -544,7 +623,7 @@ export default function App() {
 
             {/* Quick Action Grid */}
             <div className="quick-grid">
-              <button className="quick-action-btn" onClick={() => triggerToast("Opening Store Finder map...")}>
+              <button className="quick-action-btn" onClick={() => setCurrentTab('stores')}>
                 <div className="quick-icon-wrapper" style={{ backgroundColor: '#E3F2FD', color: '#1E88E5' }}>
                   <MapPin size={20} />
                 </div>
@@ -565,7 +644,10 @@ export default function App() {
                 <span className="quick-label">My Coupons</span>
               </button>
 
-              <button className="quick-action-btn" onClick={() => triggerToast("Opening Partner Delivery list...")}>
+              <button className="quick-action-btn" onClick={() => {
+                deliveryScrollRef.current = true;
+                setCurrentTab('leaflet');
+              }}>
                 <div className="quick-icon-wrapper" style={{ backgroundColor: '#F3E5F5', color: '#8E24AA' }}>
                   <ShoppingBag size={20} />
                 </div>
@@ -625,172 +707,150 @@ export default function App() {
             </div>
 
             <div className="trending-grid">
-              {/* Product 1 */}
-              <div className="product-card-vertical" onClick={() => setCurrentTab('leaflet')}>
-                <div className="prod-img-wrapper">
-                  <span className="tag-badge">-24%</span>
-                  <span className="flag-badge">🇮🇹 Italy</span>
-                  <img src="https://images.unsplash.com/photo-1566478989037-eec170784d0b?w=150&auto=format&fit=crop&q=60" alt="Amica Kettle Chips" className="prod-img" onError={(e) => {
-                    e.target.src = "https://placehold.co/120x90/FFF0F1/CE1126?text=Amica+Chips";
-                  }} />
-                </div>
-                <div className="prod-title">Amica Kettle Chips BBQ 130g</div>
-                <div className="prod-meta">
-                  <Star size={10} fill="#FFB300" color="#FFB300" />
-                  <span>4.8 (85 ratings)</span>
-                </div>
-                <div className="prod-price-row">
-                  <div className="price-box">
-                    <span className="price-now">AED 7.99</span>
-                    <span className="price-old">AED 10.50</span>
+              {HOT_DEALS_PRODUCTS.map((product) => (
+                <div
+                  key={product.id}
+                  className="product-card-vertical"
+                  onClick={() => {
+                    setSelectedProductId(product.id);
+                    setCurrentTab('leaflet');
+                  }}
+                >
+                  <div className="prod-img-wrapper">
+                    <span className="tag-badge">{product.discount}</span>
+                    <span className="flag-badge">{product.flag}</span>
+                    <img
+                      src={product.img.replace('w=300', 'w=150')}
+                      alt={product.alt}
+                      className="prod-img"
+                      onError={(e) => { e.target.src = product.imgFallback; }}
+                    />
                   </div>
-                  <button 
-                    className="add-list-btn" 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      addToList("Amica Kettle Chips");
-                    }}
-                    aria-label="Add to List"
-                  >
-                    <Plus size={16} />
-                  </button>
-                </div>
-              </div>
-
-              {/* Product 2 */}
-              <div className="product-card-vertical" onClick={() => setCurrentTab('leaflet')}>
-                <div className="prod-img-wrapper">
-                  <span className="tag-badge">-30%</span>
-                  <span className="flag-badge">🇪🇸 Spain</span>
-                  <img src="https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=150&auto=format&fit=crop&q=60" alt="Olive Oil" className="prod-img" onError={(e) => {
-                    e.target.src = "https://placehold.co/120x90/FFF0F1/CE1126?text=Olive+Oil";
-                  }} />
-                </div>
-                <div className="prod-title">Coosur Extra Virgin Olive Oil 1L</div>
-                <div className="prod-meta">
-                  <Star size={10} fill="#FFB300" color="#FFB300" />
-                  <span>4.9 (120 ratings)</span>
-                </div>
-                <div className="prod-price-row">
-                  <div className="price-box">
-                    <span className="price-now">AED 24.50</span>
-                    <span className="price-old">AED 35.00</span>
+                  <div className="prod-title">{product.name}</div>
+                  <div className="prod-meta">
+                    <Star size={10} fill="#FFB300" color="#FFB300" />
+                    <span>{product.rating} ({product.ratingCount})</span>
                   </div>
-                  <button 
-                    className="add-list-btn" 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      addToList("Coosur Extra Virgin Olive Oil");
-                    }}
-                    aria-label="Add to List"
-                  >
-                    <Plus size={16} />
-                  </button>
+                  <div className="prod-price-row">
+                    <div className="price-box">
+                      <span className="price-now">{product.priceNow}</span>
+                      <span className="price-old">{product.priceOld}</span>
+                    </div>
+                    <button
+                      className="add-list-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        addToList(product.name);
+                      }}
+                      aria-label="Add to List"
+                    >
+                      <Plus size={16} />
+                    </button>
+                  </div>
                 </div>
-              </div>
+              ))}
             </div>
           </div>
         )}
 
         {/* TAB 2: LEAFLET DETAIL */}
-        {currentTab === 'leaflet' && (
-          <div className="leaflet-detail">
-            <div className="product-detail-card">
-              
-              <div className="detail-img-container">
-                <img 
-                  src="https://images.unsplash.com/photo-1566478989037-eec170784d0b?w=300&auto=format&fit=crop&q=60" 
-                  alt="Amica Kettle Chips BBQ 130g" 
-                  className="detail-img"
-                  onError={(e) => {
-                    e.target.src = "https://placehold.co/250x180/FFF0F1/CE1126?text=Amica+Chips+BBQ";
-                  }}
-                />
-              </div>
+        {currentTab === 'leaflet' && (() => {
+          const product = HOT_DEALS_PRODUCTS.find(p => p.id === selectedProductId) || HOT_DEALS_PRODUCTS[0];
+          return (
+            <div className="leaflet-detail">
+              <div className="product-detail-card">
 
-              <div className="badge-group">
-                <span className="badge-pill import">🇮🇹 Imported from Italy</span>
-                <span className="badge-pill save">Save 24%</span>
-                <span className="badge-pill rating">
-                  <Star size={10} fill="#F57F17" color="#F57F17" /> 4.8
-                </span>
-              </div>
-
-              <h2 className="detail-title">Amica Kettle Chips BBQ 130g</h2>
-              <p className="detail-desc">
-                Crispy, premium hand-cooked kettle chips loaded with sweet and smoky Italian BBQ spices. Perfectly packed to preserve freshness.
-              </p>
-
-              <div className="detail-price-box">
-                <span style={{ fontSize: '1.6rem', fontWeight: 900, color: 'var(--primary)' }}>AED 7.99</span>
-                <span style={{ fontSize: '1.05rem', color: 'var(--text-muted)', textDecoration: 'line-through' }}>AED 10.50</span>
-              </div>
-
-              {/* Instant Delivery Partners Section */}
-              <div className="partner-section-title">
-                <Sparkles size={14} color="var(--primary)" />
-                <span>⚡ Order Now via Delivery Partners</span>
-              </div>
-
-              <div className="partner-buttons">
-                <button className="partner-btn talabat" onClick={() => startDeepLink('Talabat')}>
-                  <div className="partner-info">
-                    <span className="partner-logo-box">🟧</span>
-                    <div>
-                      <div>Talabat Delivery</div>
-                      <div className="partner-tagline">Deliver in 20-30 mins</div>
-                    </div>
-                  </div>
-                  <ChevronRight size={18} />
-                </button>
-
-                <button className="partner-btn careem" onClick={() => startDeepLink('Careem')}>
-                  <div className="partner-info">
-                    <span className="partner-logo-box">🟩</span>
-                    <div>
-                      <div>Careem Grocery</div>
-                      <div className="partner-tagline">Save on delivery fees</div>
-                    </div>
-                  </div>
-                  <ChevronRight size={18} />
-                </button>
-
-                <button className="partner-btn deliveroo" onClick={() => startDeepLink('Deliveroo')}>
-                  <div className="partner-info">
-                    <span className="partner-logo-box">🟪</span>
-                    <div>
-                      <div>Deliveroo Express</div>
-                      <div className="partner-tagline">Premium tracking enabled</div>
-                    </div>
-                  </div>
-                  <ChevronRight size={18} />
-                </button>
-              </div>
-
-              {/* Secondary Utilities */}
-              <div className="utility-buttons">
-                <button className="btn-secondary-action" onClick={() => addToList("Amica Kettle Chips BBQ")}>
-                  <Plus size={16} />
-                  <span>Add to In-Store Shopping List</span>
-                </button>
-
-                <button 
-                  className="btn-secondary-action" 
-                  onClick={() => triggerToast("Downloading Weekly Leaflet PDF Booklet...")}
-                  style={{ backgroundColor: '#f5f5f5', border: '1px solid #ddd', color: 'var(--text-main)', fontWeight: '600' }}
-                >
-                  📥 Download Booklet PDF
-                </button>
-
-                <div className="aisle-locator">
-                  <MapPin size={16} />
-                  <span>Find in Aisle 4 - Al Nahda Branch</span>
+                <div className="detail-img-container">
+                  <img
+                    src={product.img}
+                    alt={product.alt}
+                    className="detail-img"
+                    onError={(e) => { e.target.src = product.imgFallback; }}
+                  />
                 </div>
-              </div>
 
+                <div className="badge-group">
+                  <span className="badge-pill import">{product.country}</span>
+                  <span className="badge-pill save">{product.savePct}</span>
+                  <span className="badge-pill rating">
+                    <Star size={10} fill="#F57F17" color="#F57F17" /> {product.rating}
+                  </span>
+                </div>
+
+                <h2 className="detail-title">{product.name}</h2>
+                <p className="detail-desc">{product.desc}</p>
+
+                <div className="detail-price-box">
+                  <span style={{ fontSize: '1.6rem', fontWeight: 900, color: 'var(--primary)' }}>{product.priceNow}</span>
+                  <span style={{ fontSize: '1.05rem', color: 'var(--text-muted)', textDecoration: 'line-through' }}>{product.priceOld}</span>
+                </div>
+
+                {/* Instant Delivery Partners Section */}
+                <div id="delivery-partners" className="partner-section-title">
+                  <Sparkles size={14} color="var(--primary)" />
+                  <span>⚡ Order Now via Delivery Partners</span>
+                </div>
+
+                <div className="partner-buttons">
+                  <button className="partner-btn talabat" onClick={() => startDeepLink('Talabat')}>
+                    <div className="partner-info">
+                      <span className="partner-logo-box">🟧</span>
+                      <div>
+                        <div>Talabat Delivery</div>
+                        <div className="partner-tagline">Deliver in 20-30 mins</div>
+                      </div>
+                    </div>
+                    <ChevronRight size={18} />
+                  </button>
+
+                  <button className="partner-btn careem" onClick={() => startDeepLink('Careem')}>
+                    <div className="partner-info">
+                      <span className="partner-logo-box">🟩</span>
+                      <div>
+                        <div>Careem Grocery</div>
+                        <div className="partner-tagline">Save on delivery fees</div>
+                      </div>
+                    </div>
+                    <ChevronRight size={18} />
+                  </button>
+
+                  <button className="partner-btn deliveroo" onClick={() => startDeepLink('Deliveroo')}>
+                    <div className="partner-info">
+                      <span className="partner-logo-box">🟪</span>
+                      <div>
+                        <div>Deliveroo Express</div>
+                        <div className="partner-tagline">Premium tracking enabled</div>
+                      </div>
+                    </div>
+                    <ChevronRight size={18} />
+                  </button>
+                </div>
+
+                {/* Secondary Utilities */}
+                <div className="utility-buttons">
+                  <button className="btn-secondary-action" onClick={() => addToList(product.name)}>
+                    <Plus size={16} />
+                    <span>Add to In-Store Shopping List</span>
+                  </button>
+
+                  <button
+                    className="btn-secondary-action"
+                    onClick={() => triggerToast('Downloading Weekly Leaflet PDF Booklet...')}
+                    style={{ backgroundColor: '#f5f5f5', border: '1px solid #ddd', color: 'var(--text-main)', fontWeight: '600' }}
+                  >
+                    📥 Download Booklet PDF
+                  </button>
+
+                  <div className="aisle-locator">
+                    <MapPin size={16} />
+                    <span>Find in {product.aisle}</span>
+                  </div>
+                </div>
+
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* TAB 3: REWARDS PAGE */}
         {currentTab === 'rewards' && (
